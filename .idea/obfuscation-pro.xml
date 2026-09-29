@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ObfuscationProSettings">
+    <option name="detectedTool" value="PROGUARD" />
+    <option name="firstDetectionNotificationShown" value="true" />
+    <option name="moduleSettings">
+      <list>
+        <b />
+        <b />
+        <b />
+        <b />
+        <b />
+        <b />
+      </list>
+    </option>
+  </component>
+</project>

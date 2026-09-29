@@ -1,26 +1,38 @@
 package com.hamric.gituser
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
-import android.widget.Button
-import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import org.koin.android.ext.android.inject
+import androidx.core.content.ContextCompat
+import androidx.navigation.fragment.NavHostFragment
+import com.hamric.core.network.BuildConfig
+import com.hamric.gituser.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
 
-    private val greetingService: GreetingService by inject()
+    private lateinit var binding: ActivityMainBinding
+    private val notifPermissionLauncher = //for chucker purpose on android 13++
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        val tvMessage = findViewById<TextView>(R.id.tvMessage)
-        val btnGreet = findViewById<Button>(R.id.btnGreet)
+        val navHost = supportFragmentManager
+            .findFragmentById(R.id.navHostFragment) as NavHostFragment
+        navHost.navController.setGraph(R.navigation.nav_graph)
 
-        tvMessage.text = greetingService.greet("Developer")
-
-        btnGreet.setOnClickListener {
-            tvMessage.text = greetingService.greet("Koin User")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && BuildConfig.DEBUG) {
+            if (ContextCompat.checkSelfPermission(
+                    this, Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
         }
     }
 }

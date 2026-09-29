@@ -25,4 +25,9 @@ dependencyResolutionManagement {
 
 rootProject.name = "Gituser"
 include(":app")
- 
+include(":core:common")
+include(":core:network")
+include(":core:database")
+include(":domain")
+include(":data")
+include(":feature:search_user")
