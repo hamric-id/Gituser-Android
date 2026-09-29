@@ -6,7 +6,7 @@
 
     <fragment
         android:id="@+id/searchFragment"
-        android:name="com.hamric.feature.searchuser.SearchFragment"
+        android:name="com.hamric.feature.users.SearchFragment"
         android:label="Search"
         tools:layout="@layout/fragment_search"
         xmlns:tools="http://schemas.android.com/tools" />

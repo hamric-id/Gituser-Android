@@ -11,4 +11,5 @@ val databaseModule = module {
             .build()
     }
     single { get<AppDatabase>().userDao() }
+    single { get<AppDatabase>().paginationDao() }
 }

@@ -11,6 +11,9 @@ interface UserDao {
     @Query("SELECT * FROM users WHERE login LIKE '%' || :query || '%' ORDER BY login ASC")
     fun searchCached(query: String): Flow<List<UserEntity>>
 
+    @Query("SELECT * FROM users ORDER BY id ASC")
+    fun observeAll(): Flow<List<UserEntity>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(users: List<UserEntity>)
 
