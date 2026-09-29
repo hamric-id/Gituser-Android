@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="search_hint">Search GitHub users</string>
+    <string name="search_empty">No users found for \"%1$s\"</string>
+    <string name="retry">Retry</string>
+    <string name="list_empty">No users found</string>
+    <string name="avatar_description">User avatar</string>
+</resources>

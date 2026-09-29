@@ -50,7 +50,7 @@ dependencies {
     implementation(project(":core:database"))
     implementation(project(":domain"))
     implementation(project(":data"))
-    implementation(project(":feature:search_user"))
+    implementation(project(":feature:users"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

@@ -40,12 +40,21 @@ class SearchUsersUseCaseTest {
 
     @Test
     fun `trims input before delegating to repository`() = runTest {
-        coEvery { repository.searchUsers("octocat") } returns Resource.Success(Unit)
+        coEvery { repository.searchUsers("octocat", 1) } returns Resource.Success(Unit)
 
         val result = useCase("  octocat  ")
 
         assertTrue(result is Resource.Success)
-        coVerify(exactly = 1) { repository.searchUsers("octocat") }
+        coVerify(exactly = 1) { repository.searchUsers("octocat", 1) }
+    }
+
+    @Test
+    fun `forwards page argument`() = runTest {
+        coEvery { repository.searchUsers("kotlin", 3) } returns Resource.Success(Unit)
+
+        useCase("kotlin", page = 3)
+
+        coVerify(exactly = 1) { repository.searchUsers("kotlin", 3) }
     }
 
     @Test
