@@ -4,8 +4,13 @@ import com.hamric.domain.model.User
 
 data class SearchUiState(
     val query: String = "",
-    val isLoading: Boolean = false,
     val users: List<User> = emptyList(),
+    val mode: Mode = Mode.LIST,
+    val isSearching: Boolean = false,
+    val isLoadingMore: Boolean = false,
     val error: String? = null,
-    val isEmpty: Boolean = false
-)
+    val isEmpty: Boolean = false,
+    val endReached: Boolean = false
+){
+    enum class Mode { LIST, SEARCH }
+}

@@ -5,6 +5,9 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hamric.core.common.Resource
+import com.hamric.domain.repository.UserRepository
+import com.hamric.domain.usecase.FetchUserListPageUseCase
+import com.hamric.domain.usecase.ObserveAllCachedUsersUseCase
 import com.hamric.domain.usecase.ObserveCachedUsersUseCase
 import com.hamric.domain.usecase.SearchUsersUseCase
 import kotlinx.coroutines.FlowPreview
@@ -18,31 +21,150 @@ import kotlinx.coroutines.launch
 @OptIn(FlowPreview::class)
 class SearchViewModel(
     private val searchUsers: SearchUsersUseCase,
-    private val observeCached: ObserveCachedUsersUseCase
+    private val observeCachedUsers: ObserveCachedUsersUseCase,
+    private val fetchUserListPage: FetchUserListPageUseCase,
+    private val observeAllCachedUsers: ObserveAllCachedUsersUseCase,
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     private val _state = MutableLiveData(SearchUiState())
     val state: LiveData<SearchUiState> = _state
 
     private val queryFlow = MutableStateFlow("")
-    private var debounceJob: Job? = null
+
+    private var listSince: Long = 0L
+    private var searchPage: Int = 1
+    private var searchQueryForPaging: String = ""
+    private var listEndReached = false
+    private var searchEndReached = false
+
     private var observeJob: Job? = null
+    private var searchJob: Job? = null
+
+    init {
+        viewModelScope.launch {
+            listSince = userRepository.lastListSince()
+        }
+
+        enterListMode()
+        startSearchDebounce()
+    }
 
     fun onQueryChange(newQuery: String) {
+        val wasEmpty = _state.value?.query.isNullOrBlank()
+        val isEmptyNow = newQuery.isBlank()
+
         updateState { it.copy(query = newQuery, error = null) }
-        queryFlow.value = newQuery
-        observeCachedQuery(newQuery)
-        debounceSearch()
+
+        if (isEmptyNow) { // Switch to USER LIST mode
+            if (!wasEmpty) {
+                updateState {
+                    it.copy(
+                        mode = SearchUiState.Mode.LIST,
+                        users = emptyList(),
+                        isEmpty = false,
+                        endReached = false
+                    )
+                }
+                searchEndReached = false
+                searchPage = 1
+                searchQueryForPaging = ""
+            }
+            enterListMode()
+        } else { // Switch to SEARCH mode / stay
+            if (wasEmpty) {
+                updateState {
+                    it.copy(
+                        mode = SearchUiState.Mode.SEARCH,
+                        users = emptyList(),
+                        isEmpty = false,
+                        endReached = false
+                    )
+                }
+                listEndReached = false
+                observeJob?.cancel()
+            }
+            queryFlow.value = newQuery
+        }
     }
 
     fun retry() {
-        val q = _state.value?.query.orEmpty()
-        if (q.isNotBlank()) runSearch(q)
+        val s = _state.value ?: return
+        if (s.mode == SearchUiState.Mode.SEARCH && s.query.isNotBlank()) {
+            runSearch(s.query)
+        } else {
+            viewModelScope.launch { fetchNextListPage() }
+        }
     }
 
-    private fun debounceSearch() {
-        debounceJob?.cancel()
-        debounceJob = viewModelScope.launch {
+    fun onListScrolledToEnd() {
+        val s = _state.value ?: return
+        if (s.mode != SearchUiState.Mode.LIST) return
+        if (s.isLoadingMore || listEndReached) return
+        viewModelScope.launch { fetchNextListPage() }
+    }
+
+    fun onSearchScrolledToEnd() {
+        val s = _state.value ?: return
+        if (s.mode != SearchUiState.Mode.SEARCH) return
+        if (s.isLoadingMore || searchEndReached) return
+        if (searchQueryForPaging.isBlank()) return
+        viewModelScope.launch { fetchNextSearchPage() }
+    }
+
+    private fun enterListMode() {
+        observeJob?.cancel()
+        observeJob = viewModelScope.launch {
+            observeAllCachedUsers().collect { users ->
+                if (_state.value?.mode == SearchUiState.Mode.LIST) {
+                    updateState {
+                        it.copy(
+                            users = users,
+                            isEmpty = users.isEmpty() && !it.isLoadingMore && !listEndReached
+                        )
+                    }
+                }
+            }
+        }
+
+        viewModelScope.launch {
+            if (_state.value?.users.isNullOrEmpty() && !listEndReached) {
+                fetchNextListPage()
+            }
+        }
+    }
+
+    private suspend fun fetchNextListPage() {
+        if (_state.value?.isLoadingMore == true) return
+        updateState { it.copy(isLoadingMore = true, error = null) }
+
+        when (val result = fetchUserListPage(listSince)) {
+            is Resource.Success -> {
+                val newSince = result.data
+                val madeProgress = newSince != listSince
+                listSince = newSince
+                if (!madeProgress) {
+                    listEndReached = true
+                }
+                updateState {
+                    it.copy(
+                        isLoadingMore = false,
+                        endReached = listEndReached
+                    )
+                }
+            }
+            is Resource.Error -> updateState {
+                it.copy(
+                    isLoadingMore = false,
+                    error = result.throwable.message ?: "Couldn't load users"
+                )
+            }
+            Resource.Loading -> Unit
+        }
+    }
+
+    private fun startSearchDebounce() {
+        searchJob = viewModelScope.launch {
             queryFlow
                 .debounce(400)
                 .distinctUntilChanged()
@@ -51,38 +173,59 @@ class SearchViewModel(
         }
     }
 
-    private fun observeCachedQuery(query: String) {
+    private fun runSearch(query: String) {
+        searchPage = 1
+        searchEndReached = false
+        searchQueryForPaging = query
+
         observeJob?.cancel()
-        if (query.isBlank()) {
-            updateState { it.copy(users = emptyList(), isEmpty = false) }
-            return
-        }
         observeJob = viewModelScope.launch {
-            observeCached(query).collect { users ->
-                val loading = _state.value?.isLoading == true
-                updateState {
-                    it.copy(
-                        users = users,
-                        isEmpty = users.isEmpty() && !loading && it.query.isNotBlank()
-                    )
+            observeCachedUsers(query).collect { cached ->
+                if (_state.value?.mode == SearchUiState.Mode.SEARCH) {
+                    updateState {
+                        it.copy(
+                            users = cached,
+                            isEmpty = cached.isEmpty()
+                                    && !it.isSearching
+                                    && !it.isLoadingMore
+                        )
+                    }
                 }
             }
         }
-    }
 
-    private fun runSearch(query: String) {
         viewModelScope.launch {
-            updateState { it.copy(isLoading = true, error = null) }
-            when (val result = searchUsers(query)) {
-                is Resource.Success -> updateState { it.copy(isLoading = false) }
+            updateState { it.copy(isSearching = true, error = null) }
+            when (val result = searchUsers(query, searchPage)) {
+                is Resource.Success -> updateState { it.copy(isSearching = false) }
                 is Resource.Error -> updateState {
                     it.copy(
-                        isLoading = false,
-                        error = result.throwable.message ?: "Something went wrong"
+                        isSearching = false,
+                        error = result.throwable.message ?: "Bad Network — showing cached results"
                     )
                 }
                 Resource.Loading -> Unit
             }
+        }
+    }
+
+    private suspend fun fetchNextSearchPage() {
+        if (_state.value?.isLoadingMore == true) return
+        updateState { it.copy(isLoadingMore = true) }
+
+        val next = searchPage + 1
+        when (val result = searchUsers(searchQueryForPaging, next)) {
+            is Resource.Success -> {
+                searchPage = next
+                updateState { it.copy(isLoadingMore = false) }
+            }
+            is Resource.Error -> updateState {
+                it.copy(
+                    isLoadingMore = false,
+                    error = result.throwable.message ?: "Couldn't load more results"
+                )
+            }
+            Resource.Loading -> Unit
         }
     }
 
