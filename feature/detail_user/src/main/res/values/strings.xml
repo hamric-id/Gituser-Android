@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="label_repos">Repos</string>
+    <string name="label_followers">Followers</string>
+    <string name="label_following">Following</string>
+    <string name="retry">Retry</string>
+</resources>

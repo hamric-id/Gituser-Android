@@ -76,7 +76,6 @@ androidx-fragment-testing = { group = "androidx.fragment", name = "fragment-test
 androidx-fragment-testing-manifest = { group = "androidx.fragment", name = "fragment-testing-manifest", version.ref = "fragmentKtx" }
 
 github-bumptech-glide = { group = "com.github.bumptech.glide", name = "glide", version.ref = "glide" }
-github-bumptech-glide-compiler = { group = "com.github.bumptech.glide", name = "compiler", version.ref = "glide" }
 
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }

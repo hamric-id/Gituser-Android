@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="action_search_to_detail" type="id" />
+    <item name="userDetailFragment" type="id" />
+</resources>

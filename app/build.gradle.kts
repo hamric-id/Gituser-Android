@@ -2,7 +2,6 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.parcelize)
-    alias(libs.plugins.androidx.navigation.safeargs)
 }
 
 android {
@@ -51,6 +50,7 @@ dependencies {
     implementation(project(":domain"))
     implementation(project(":data"))
     implementation(project(":feature:users"))
+    implementation(project(":feature:detail_user"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
