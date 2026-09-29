@@ -1,10 +1,11 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.androidx.navigation.safeargs)
 }
 
 android {
-    namespace = "com.hamric.feature.users"
+    namespace = "com.hamric.feature.detailuser"
     compileSdk {
         version = release(36) {
             minorApiLevel = 1
@@ -40,46 +41,41 @@ android {
     }
     buildFeatures { viewBinding = true }
 
-
 }
 
 dependencies {
-    implementation(project(":domain"))
     implementation(project(":core:common"))
+    implementation(project(":domain"))
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
-    implementation(libs.androidx.navigation.fragment.ktx)
+    implementation(libs.androidx.fragment.ktx)
     implementation(libs.androidx.constraintlayout)
-    implementation(libs.androidx.recyclerview)
 
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.lifecycle.livedata.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+
+    implementation(libs.androidx.navigation.fragment.ktx)
 
     implementation(libs.insert.koin.android)
     implementation(libs.github.bumptech.glide)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
 
-
     testImplementation(libs.junit)
+    testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.cash.turbine)
     testImplementation(libs.androidx.arch.core.testing)
     testImplementation(libs.insert.koin.test)
-    testImplementation(libs.mockk)
-
-    debugImplementation(libs.androidx.fragment.testing.manifest)
 
     androidTestImplementation(libs.mockk.android)
-    androidTestImplementation(libs.insert.koin.test)
-    androidTestImplementation(libs.insert.koin.android)
-    androidTestImplementation(libs.androidx.fragment.testing)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.espresso.core)
-    androidTestImplementation(libs.androidx.test.ext.junit)
-    androidTestImplementation(libs.androidx.test.core)
-    androidTestImplementation(libs.androidx.test.runner)
-    androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.fragment.testing)
+    androidTestImplementation(libs.insert.koin.android)
+    androidTestImplementation(libs.insert.koin.test)
+    debugImplementation(libs.androidx.fragment.testing.manifest)
 }

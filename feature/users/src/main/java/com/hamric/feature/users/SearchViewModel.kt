@@ -43,6 +43,17 @@ class SearchViewModel(
 
     private var initialFetchTriggered = false
 
+    private val _navigation = MutableLiveData<String?>()
+    val navigation: LiveData<String?> = _navigation
+
+    fun onUserClicked(login: String) {
+        _navigation.value = login
+    }
+
+    fun onNavigationHandled() {
+        _navigation.value = null
+    }
+
     init {
         viewModelScope.launch {
             listSince = userRepository.lastListSince()

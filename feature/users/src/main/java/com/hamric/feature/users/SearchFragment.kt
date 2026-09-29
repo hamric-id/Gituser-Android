@@ -1,14 +1,17 @@
 package com.hamric.feature.users
 
+import com.hamric.core.common.R as CommonR
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.bundle.bundleOf
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.hamric.feature.users.databinding.FragmentSearchBinding
@@ -20,7 +23,10 @@ class SearchFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: SearchViewModel by viewModel()
-    private val adapter by lazy { SearchUserAdapter(onClick = { /* detail next step */ }) }
+    private val adapter by lazy { SearchUserAdapter(onClick = {user ->
+            viewModel.onUserClicked(user.login)
+        })
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -56,6 +62,16 @@ class SearchFragment : Fragment() {
         viewModel.state.observe(viewLifecycleOwner) { state ->
             render(state)
         }
+
+        viewModel.navigation.observe(viewLifecycleOwner) { login ->
+            if (login != null) {
+                findNavController().navigate(
+                    CommonR.id.action_search_to_detail,
+                    bundleOf("login" to login)
+                )
+                viewModel.onNavigationHandled()
+            }
+        }
     }
 
     private val scrollListener = object : RecyclerView.OnScrollListener() {
@@ -83,19 +99,6 @@ class SearchFragment : Fragment() {
         binding.textError.text =
             if(state.error == null)  ""
             else "Result Showed from Cached because ${state.error}"
-
-        val showEmpty = state.isEmpty ||
-                (state.mode == SearchUiState.Mode.LIST
-                        && state.users.isEmpty()
-                        && !state.isLoadingMore
-                        && state.error == null)
-        binding.textEmpty.visibility = if (state.isEmpty) View.VISIBLE else View.GONE
-        binding.textEmpty.text =
-            if (state.mode == SearchUiState.Mode.SEARCH && state.query.isNotBlank()) {
-                getString(R.string.search_empty, state.query)
-            }else{
-                getString(R.string.list_empty)
-            }
 
         adapter.submitList(state.users)
     }
